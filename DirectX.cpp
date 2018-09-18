@@ -14,6 +14,9 @@
 //   COMPILE DIRECTX 8:
 //     compile.bat
 //
+// PROJECT:
+//   https://github.com/gokernel2017/directx_8_9
+//
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
@@ -41,7 +44,13 @@ struct Vertex {
 };
 
 static char       ClassName[] = "Application_Class_Name";
+LPDIRECT3D D3D = NULL;
 LPDIRECT3DDEVICE  device = NULL;
+int color = D3DCOLOR_XRGB(255,130,30);
+
+HFONT hFont;// =  (HFONT)GetStockObject (DEFAULT_GUI_FONT);//SYSTEM_FONT);
+LPD3DXFONT pFont = NULL;
+HRESULT r = 0;
 
 //-------------------------------------------------------------------
 //
@@ -127,7 +136,6 @@ static LRESULT WINAPI WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 }
 
 LPDIRECT3DDEVICE gxCreateDevice (HWND hwnd, int FullScreen) {
-    LPDIRECT3D D3D = NULL;
     LPDIRECT3DDEVICE dev = NULL;
     D3DPRESENT_PARAMETERS d3dpp;
     D3DDISPLAYMODE d3ddm;
@@ -235,7 +243,7 @@ void gxEndScene (void) {
 }
 
 void gxDrawRect (int x, int y, int w, int h) {
-    int color = D3DCOLOR_XRGB(255,130,30);
+
     Vertex p[] = {
         { x, y,   0, 1, color },    { x+w, y,    0, 1, color },  // --
         { x+w, y, 0, 1, color },    { x+w, y+h,  0, 1, color },  // |
@@ -254,7 +262,8 @@ void gxDrawRect (int x, int y, int w, int h) {
     device->DrawPrimitiveUP (D3DPT_LINELIST, 4, p, sizeof(Vertex));
 }
 
-int x = 100;
+int x = 100, count;
+char buf[100] = { 'F', 'P', 'S', ':', ' ', '6', '0', 0, 0 };
 void idle (void) {
     static int fps=0, t1=0, t2=0;
 
@@ -268,12 +277,43 @@ void idle (void) {
     t1 = time(NULL);
     if (t1 != t2) {
         t2 = t1;
-        printf ("FPS: %d\n", fps);
+        sprintf (buf, "FPS(Rate 60): %d | %d", fps, count);
+        count++;
         fps=0;
     }
 
+
+    if (r==S_OK) {
+        // Rectangle where the text will be located
+        RECT TextRect = {10,10,0,0};
+
+        // Inform font it is about to be used
+        pFont->Begin();
+
+        // Calculate the rectangle the text will occupy
+//        pFont->DrawText(buf, -1, &TextRect, DT_CALCRECT, 0 );
+
+        // Output the text, left aligned
+        //pFont->DrawText("Hello World 2", -1, &TextRect, DT_LEFT, color );
+        pFont->DrawText (buf, -1, &TextRect, DT_LEFT, color );
+
+        // Finish up drawing
+        pFont->End();
+    }
+
+
     gxEndScene();
     FPS_Delay ();
+}
+
+
+void CreateText (void) {
+
+    hFont =  (HFONT)GetStockObject (SYSTEM_FIXED_FONT);
+
+    // Create the D3DX Font
+    r = D3DXCreateFont(device, hFont, &pFont);
+
 }
 
 int main (int argc, char **argv) {
@@ -298,7 +338,15 @@ int main (int argc, char **argv) {
 
             FPS_SetFps (60);
 
+            CreateText ();
+
             gxRun (idle);
+
+            // Free objects:
+            if (pFont)
+                pFont->Release();
+		        device->Release();
+		        D3D->Release();
         }
         else {
             printf ("DirectX Failed\n");

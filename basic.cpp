@@ -11,6 +11,13 @@
 //   or
 //   g++ basic.cpp -o basic -ld3d9 -lwinmm -DDX9
 //
+//   COMPILE DIRECTX 8:
+//     compile_basic.bat
+//
+// PROJECT:
+//   https://github.com/gokernel2017/directx_8_9
+//
+//
 // BY: Francisco - gokernel@hotmail.com
 //
 //-------------------------------------------------------------------
@@ -31,9 +38,14 @@
     #define Direct3DCreate      Direct3DCreate9
 #endif
 
-static char       ClassName[] = "Application_Class_Name";
+static char ClassName[] = "Application_Class_Name";
+LPDIRECT3D D3D = NULL;
 LPDIRECT3DDEVICE  device = NULL;
+int color = D3DCOLOR_XRGB(255,130,30);
 
+HFONT hFont;
+LPD3DXFONT pFont = NULL;
+HRESULT r = 0;
 
 static LRESULT WINAPI WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
@@ -49,7 +61,6 @@ static LRESULT WINAPI WindowProc (HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 }
 
 LPDIRECT3DDEVICE gxCreateDevice (HWND hwnd, int FullScreen) {
-    LPDIRECT3D D3D = NULL;
     LPDIRECT3DDEVICE dev = NULL;
     D3DPRESENT_PARAMETERS d3dpp;
     D3DDISPLAYMODE d3ddm;
@@ -142,15 +153,14 @@ void gxEndScene (void) {
 }
 
 void gxDrawRect (int x, int y, int w, int h) {
-    int color = D3DCOLOR_XRGB(255,130,30);
     struct Vertex {
         float x, y, z, rhw;
         DWORD color;
     } p[] = {
-        { x, y,   0, 1, color },    { x+w, y,    0, 1, color },  // --
-        { x+w, y, 0, 1, color },    { x+w, y+h,  0, 1, color },  // |
-        { x+w, y+h, 0, 1, color },  { x, y+h,  0, 1, color },  // --
-        { x, y+h, 0, 1, color },    { x, y,  0, 1, color }  // |
+        { x, y,   0, 1,   color }, { x+w, y,    0, 1,  color },  // --
+        { x+w, y, 0, 1,   color }, { x+w, y+h,  0, 1,  color },  // |
+        { x+w, y+h, 0, 1, color }, { x, y+h,  0, 1,    color },  // --
+        { x, y+h, 0, 1,   color }, { x, y,  0, 1,      color }  // |
     };
 
     #define SVertexType D3DFVF_XYZRHW | D3DFVF_DIFFUSE
@@ -162,6 +172,36 @@ void gxDrawRect (int x, int y, int w, int h) {
     device->SetFVF (SVertexType);
     #endif
     device->DrawPrimitiveUP (D3DPT_LINELIST, 4, p, sizeof(Vertex));
+}
+
+void DrawText (void) {
+
+    hFont =  (HFONT)GetStockObject (SYSTEM_FIXED_FONT);
+
+    // Create the D3DX Font
+    r = D3DXCreateFont(device, hFont, &pFont);
+
+    if (r==S_OK) {
+        // Rectangle where the text will be located
+        RECT TextRect={100,100,0,0};
+
+        // Inform font it is about to be used
+        pFont->Begin();
+
+        // Calculate the rectangle the text will occupy
+        pFont->DrawText("Hello World", -1, &TextRect, DT_CALCRECT, 0 );
+
+        // Output the text, left aligned
+        pFont->DrawText("Hello World 2", -1, &TextRect, DT_LEFT, color);
+
+        // Finish up drawing
+        pFont->End();
+
+        // Release the font
+        pFont->Release();
+        pFont = NULL;
+    }
+    printf ("Function: DrawText();\n");
 }
 
 int main (int argc, char **argv) {
@@ -182,9 +222,16 @@ int main (int argc, char **argv) {
 
             gxBeginScene();
             gxDrawRect (100, 150, 320, 240);
+            DrawText ();
             gxEndScene();
 
             gxRun ();
+
+            // Free objects:
+            if (pFont)
+                pFont->Release();
+		        device->Release();
+		        D3D->Release();
         }
         else {
             printf ("DirectX Failed\n");
@@ -193,3 +240,4 @@ int main (int argc, char **argv) {
 
     printf ("Exiting With Sucess:\n");
 }
+
