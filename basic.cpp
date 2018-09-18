@@ -230,8 +230,8 @@ int main (int argc, char **argv) {
             // Free objects:
             if (pFont)
                 pFont->Release();
-		        device->Release();
-		        D3D->Release();
+            device->Release();
+            D3D->Release();
         }
         else {
             printf ("DirectX Failed\n");
